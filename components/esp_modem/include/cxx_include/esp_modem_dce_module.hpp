@@ -71,19 +71,92 @@ public:
             }
             return true;
         } else if (mode == modem_mode::COMMAND_MODE) {
-            Task::Delay(1000); // Mandatory 1s pause before
-            int retry = 0;
+            int retry = 0, status = 0;
             while (retry++ < 3) {
-                if (set_command_mode() == command_result::OK) {
-                    return true;
+                // Mandatory 1s pause before escape
+                Task::Delay(1000);
+
+                // Create data and command callbacks
+                // NOTE: even though the sequence is sent on the command
+                // terminal, the responses can be received on the data terminal
+                // where data mode is being terminated
+                std::function<bool(uint8_t*, size_t)> dataCB = [&](uint8_t *data, size_t len){
+                    std::string_view response((char*)data, len);
+                    if (response.find("NO CARRIER", 0) != std::string::npos ||
+                        response.find("OK", 0) != std::string::npos
+                    ) {
+                        status = 1;
+                        return true;
+                    }
+                    if (response.find("ERROR", 0) != std::string::npos) {
+                        status = -1;
+                        return true;
+                    }
+
+                    return false;
+                };
+                std::function<command_result(uint8_t*, size_t)> commandCB = [&](uint8_t *data, size_t len){
+                    if (dataCB(data, len)) {
+                        return command_result::OK;
+                    } else {
+                        return command_result::TIMEOUT;
+                    }
+                };
+
+                // Wait for response helper function
+                std::function<void(int)> waitResp = [&](int delay){
+                    for (int tick = 0; tick < (delay / 100) + 1; tick += 1) {
+                        Task::Delay(100);
+                        if (status != 0) {
+                            break;
+                        }
+                    }
+                };
+
+                // Send the escape sequence to the command and data terminals
+                // capturing data and command responses
+                // NOTE: this includes the mandatory pauses after the sequence
+                // via wait for response or response timeout
+                std::string escapeSequence = "+++";
+
+                status = 0;
+                dte->set_read_cb(dataCB);
+                dte->write((uint8_t*)escapeSequence.data(), escapeSequence.length());
+                waitResp(5000);
+                if (status != 0) {
+                    return status == 1;
                 }
-                // send a newline to delimit the escape from the upcoming sync command
-                uint8_t delim = '\n';
-                dte->write(&delim, 1);
-                if (sync() == command_result::OK) {
-                    return true;
+
+                status = 0;
+                dte->set_read_cb(dataCB);
+                dte->command(escapeSequence, commandCB, 5000);
+                if (status != 0) {
+                    return status == 1;
                 }
-                Task::Delay(1000); // Mandatory 1s pause before escape
+
+                // Send new line before attempting to check if terminals accept
+                // AT commands
+                std::string lineDelim = "\r\n";
+                dte->set_read_cb(dataCB);
+                dte->write((uint8_t*)lineDelim.data(), lineDelim.length());
+                dte->command(lineDelim, commandCB, 1000);
+
+                // Check if AT commands work directly on both data and command
+                // terminals
+                std::string syncCmd = "AT\r";
+
+                status = 0;
+                dte->set_read_cb(dataCB);
+                dte->write((uint8_t*)syncCmd.data(), syncCmd.length());
+                waitResp(1000);
+                if (status == 1) {
+                    status = 0;
+                    dte->set_read_cb(dataCB);
+                    dte->command(syncCmd, commandCB, 1000);
+                    if (status == 1) {
+                        return true;
+                    }
+                }
             }
             return false;
         } else if (mode == modem_mode::CMUX_MODE) {

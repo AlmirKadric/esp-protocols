@@ -65,9 +65,9 @@ static bool exit_data(DTE &dte, ModuleIf &device, Netif &netif)
 
 static bool enter_data(DTE &dte, ModuleIf &device, Netif &netif)
 {
-    if (!device.setup_data_mode()) {
-        return false;
-    }
+    // if (!device.setup_data_mode()) {
+    //     return false;
+    // }
     if (!device.set_mode(modem_mode::DATA_MODE)) {
         return false;
     }
