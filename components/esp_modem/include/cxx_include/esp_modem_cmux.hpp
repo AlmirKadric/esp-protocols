@@ -70,6 +70,11 @@ public:
      */
     std::pair<std::shared_ptr<Terminal>, unique_buffer> detach();
 
+	/**
+	 *
+	 */
+	void set_error_cb(std::function<void(terminal_error err)> f);
+
     /**
      * @brief Sets read callback for the appropriate terminal
      * @param inst Index of the terminal
@@ -128,6 +133,7 @@ private:
     bool on_footer(CMuxFrame &frame);
     void recover_protocol(protocol_mismatch_reason reason);
 
+    std::function<void(terminal_error err)> error_cb;  /*!< Function pointer to error callbacks */
     std::function<bool(uint8_t *data, size_t len)> read_cb[MAX_TERMINALS_NUM];  /*!< Function pointers to read callbacks */
     std::shared_ptr<Terminal> term;                   /*!< The original terminal */
     cmux_state state;                                 /*!< CMux protocol state */

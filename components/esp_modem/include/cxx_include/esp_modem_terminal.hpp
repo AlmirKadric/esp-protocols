@@ -34,6 +34,7 @@ enum class terminal_error {
     CHECKSUM_ERROR,
     UNEXPECTED_CONTROL_FLOW,
     DEVICE_GONE,
+    DEVICE_RESTARTED,
 };
 
 /**

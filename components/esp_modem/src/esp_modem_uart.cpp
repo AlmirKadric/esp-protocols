@@ -187,6 +187,9 @@ int UartTerminal::read(uint8_t *data, size_t len)
 
 int UartTerminal::write(uint8_t *data, size_t len)
 {
+	// TODO: add ~50ms delay every 256 bytes if no hardware control flow is
+	// present, calculate exact delay required using bitrate and module
+	// processing speed
 #if CONFIG_ESP_MODEM_ADD_DEBUG_LOGS
     ESP_LOG_BUFFER_HEXDUMP("uart-tx", data, len, ESP_LOG_DEBUG);
 #endif

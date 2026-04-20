@@ -132,6 +132,14 @@ void DTE::set_command_callbacks()
         return true;
 #endif
     });
+	if (cmux_term) {
+		cmux_term->set_error_cb([this](terminal_error err) {
+			if (user_error_cb) {
+				user_error_cb(err);
+			}
+			handle_error(err);
+		});
+	}
     primary_term->set_error_cb([this](terminal_error err) {
         if (user_error_cb) {
             user_error_cb(err);
