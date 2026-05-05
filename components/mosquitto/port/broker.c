@@ -46,7 +46,7 @@ static int listeners__start_single_mqtt(struct mosquitto__listener *listener)
     return MOSQ_ERR_SUCCESS;
 }
 
-static int listeners__add_local(const char *host, uint16_t port)
+static int listeners__add_local(const char *host, uint16_t port, int max_connections)
 {
     struct mosquitto__listener *listeners;
     listeners = mosquitto__realloc(db.config->listeners, sizeof(struct mosquitto__listener));
@@ -62,6 +62,7 @@ static int listeners__add_local(const char *host, uint16_t port)
     listener__set_defaults(&listeners[db.config->listener_count]);
     listeners[db.config->listener_count].security_options.allow_anonymous = true;
     listeners[db.config->listener_count].port = port;
+    listeners[db.config->listener_count].max_connections = max_connections;
     listeners[db.config->listener_count].host = mosquitto__strdup(host);
     if (listeners[db.config->listener_count].host == NULL) {
         return MOSQ_ERR_NOMEM;
@@ -160,7 +161,7 @@ int mosq_broker_run(struct mosq_broker_config *broker_config)
         log__printf(NULL, MOSQ_LOG_INFO, "Using default config.");
     }
 
-    if (listeners__add_local(broker_config->host, broker_config->port)) {
+    if (listeners__add_local(broker_config->host, broker_config->port, broker_config->max_connections)) {
         return 1;
     }
 

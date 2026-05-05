@@ -25,6 +25,7 @@ typedef int (*mosq_connect_cb_t)(const char *client_id, const char *username, co
 struct mosq_broker_config {
     const char *host; /*!< Address on which the broker is listening for connections */
     int port;   /*!< Port number of the broker to listen to */
+    int max_connections; /*!< Maximum simultaneous client connections (0 means unlimited) */
     esp_tls_cfg_server_t *tls_cfg;  /*!< ESP-TLS configuration (if TLS transport used)
                                      * Please refer to the ESP-TLS official documentation
                                      * for more details on configuring the TLS options.
