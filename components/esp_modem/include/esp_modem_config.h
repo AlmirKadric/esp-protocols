@@ -77,6 +77,7 @@ struct esp_modem_dte_config {
     size_t dte_buffer_size;                             /*!< DTE buffer size */
     uint32_t task_stack_size;                           /*!< Terminal task stack size */
     unsigned task_priority;                             /*!< Terminal task priority */
+    BaseType_t task_core;                               /*!< Terminal task cpu core */
     union {
         struct esp_modem_uart_term_config uart_config;      /*!< Configuration for UART Terminal */
         struct esp_modem_vfs_term_config vfs_config;        /*!< Configuration for VFS Terminal */
@@ -99,6 +100,7 @@ struct esp_modem_dte_config {
         .dte_buffer_size = 512,        \
         .task_stack_size = 4096,       \
         .task_priority = 5,            \
+        .task_core = -1,               \
         .uart_config = {               \
             .port_num = UART_NUM_1,                 \
             .data_bits = UART_DATA_8_BITS,          \

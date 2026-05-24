@@ -21,11 +21,16 @@ namespace esp_modem {
 
 
 struct uart_task {
-    explicit uart_task(size_t stack_size, size_t priority, void *task_param, TaskFunction_t task_function) :
+    explicit uart_task(size_t stack_size, size_t priority, BaseType_t core, void *task_param, TaskFunction_t task_function) :
         task_handle(nullptr)
     {
-        BaseType_t ret = xTaskCreate(task_function, "uart_task", stack_size, task_param, priority, &task_handle);
-        ESP_MODEM_THROW_IF_FALSE(ret == pdTRUE, "create uart event task failed");
+        if (core == -1) {
+            BaseType_t ret = xTaskCreate(task_function, "uart_task", stack_size, task_param, priority, &task_handle);
+            ESP_MODEM_THROW_IF_FALSE(ret == pdTRUE, "create uart event task failed");
+        } else {
+            BaseType_t ret = xTaskCreatePinnedToCore(task_function, "uart_task", stack_size, task_param, priority, &task_handle, core);
+            ESP_MODEM_THROW_IF_FALSE(ret == pdTRUE, "create uart event task failed");
+        }
     }
 
     ~uart_task()
@@ -44,7 +49,7 @@ class UartTerminal : public Terminal {
 public:
     explicit UartTerminal(const esp_modem_dte_config *config) :
         event_queue(), uart(&config->uart_config, &event_queue, -1), signal(),
-        task_handle(config->task_stack_size, config->task_priority, this, s_task) {}
+        task_handle(config->task_stack_size, config->task_priority, config->task_core, this, s_task) {}
 
     ~UartTerminal() override = default;
 
