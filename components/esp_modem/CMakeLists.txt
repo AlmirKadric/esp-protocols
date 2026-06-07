@@ -11,7 +11,7 @@ else()
                       src/esp_modem_uart.cpp
                       src/esp_modem_term_uart.cpp
                       src/esp_modem_netif.cpp)
-    set(dependencies esp_event esp_netif KSS)
+    set(dependencies esp_event esp_netif KSS klog)
     if("${IDF_VERSION_MAJOR}.${IDF_VERSION_MINOR}" VERSION_GREATER "5.3")
         list(APPEND dependencies esp_driver_uart)
     else()

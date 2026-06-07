@@ -8,3 +8,5 @@ dependencies:
   # Required IDF version
   idf:
     version: ">=4.1"
+  klog:
+    path: ../../../kokoro_services/log/klog

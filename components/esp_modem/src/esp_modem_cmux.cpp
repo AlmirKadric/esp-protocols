@@ -11,7 +11,7 @@
 #include "esp_log.h"
 #include "sdkconfig.h"
 
-#include <kokoro/kss_console.h>
+#include <kokoro/services/log/klog.h>
 
 using namespace esp_modem;
 
@@ -176,13 +176,14 @@ bool CMux::data_available(uint8_t *data, size_t len)
 bool CMux::on_init(CMuxFrame &frame)
 {
     if (frame.ptr[0] != SOF_MARKER) {
-		if (frame.len >= 15 && memcmp(frame.ptr, "^boot.rom", 9) == 0) {
-			error_cb(terminal_error::DEVICE_RESTARTED);
-		} else {
-			KConsole.printf("CMUX MISSED_LEAD_SOF [%d]: ", frame.len);
-			KConsole.println(frame.ptr, frame.len);
-			KConsole.printHexLn(frame.ptr, frame.len);
-		}
+        if (frame.len >= 15 && memcmp(frame.ptr, "^boot.rom", 9) == 0) {
+            error_cb(terminal_error::DEVICE_RESTARTED);
+        } else {
+            auto log = KLOGI();
+            log.format("CMUX MISSED_LEAD_SOF [{}]: ", frame.len);
+            log.println(frame.ptr, frame.len);
+            log.printHexLn(frame.ptr, frame.len);
+        }
         recover_protocol(protocol_mismatch_reason::MISSED_LEAD_SOF);
         return true;
     }
@@ -258,8 +259,9 @@ bool CMux::on_header(CMuxFrame &frame)
     // since CRC could be evaluated after the frame payload gets received
     if (dlci > MAX_TERMINALS_NUM || (frame_header[1] & 0x01) == 0 ||
             (((type & FT_UIH) != FT_UIH) &&  type != (FT_UA | PF))) {
-		KConsole.print("CMUX UNEXPECTED_HEADER: ");
-		KConsole.println(frame.ptr, frame.len);
+        auto log = KLOGI();
+        log.print("CMUX UNEXPECTED_HEADER: ");
+        log.println(frame.ptr, frame.len);
         recover_protocol(protocol_mismatch_reason::UNEXPECTED_HEADER);
         return true;
     }
@@ -305,8 +307,9 @@ bool CMux::on_footer(CMuxFrame &frame)
         footer_offset = std::min(frame.len, 6 - frame_header_offset);
         memcpy(frame_header + frame_header_offset, frame.ptr, footer_offset);
         if (frame_header[5] != SOF_MARKER) {
-			KConsole.print("CMUX MISSED_TRAIL_SOF: ");
-			KConsole.println(frame.ptr, frame.len);
+            auto log = KLOGI();
+            log.print("CMUX MISSED_TRAIL_SOF: ");
+            log.println(frame.ptr, frame.len);
             recover_protocol(protocol_mismatch_reason::MISSED_TRAIL_SOF);
             return true;
         }
@@ -507,7 +510,7 @@ int CMux::write(int virtual_term, uint8_t *data, size_t len)
 
 void CMux::set_error_cb(std::function<void(terminal_error err)> f)
 {
-	error_cb = std::move(f);
+    error_cb = std::move(f);
 }
 
 void CMux::set_read_cb(int inst, std::function<bool(uint8_t *, size_t)> f)
